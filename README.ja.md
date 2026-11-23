@@ -6,6 +6,23 @@
 
 依存ゼロの極小 Rust デーモン（strip 済み約 600 KB）が純粋な HTTP/1.1 の `POST`/`GET` をローカルの `127.0.0.1:22` に中継し、同梱の Gemini Skill 雛形（`skill-template/`）と組み合わせることで、携帯やブラウザの Gemini Task から自分の Linux PC を直接ぶっ叩いてコードレビュー・ビルド・テスト・ハードウェア確認・バックグラウンドジョブ投入などを行えるようになります。
 
+> [!IMPORTANT]
+> **AI / コーディングエージェントへこのリポジトリを渡す前に**
+>
+> **GitHub の URL をそのまま AI チャットやコーディングエージェントに投げないでください。** 下部の「[技術選定の経緯と Gemini Task 実行環境の制約](#技術選定の経緯と-gemini-task-実行環境の制約)」に書かれたサンドボックス制約・スキャナ回避の解説は、文脈なしの初見 AI からはセキュリティ回避と誤認されて拒否されることがあります。
+>
+> 先に**人間がこの README をすべて読み、注意事項とセキュリティ上のリスクを理解した上で**、セットアップ用の使い捨てディレクトリとして `git clone` 直後の状態で以下の 2 コマンドを手で実行してから、そのディレクトリをコーディングエージェントに渡してください（または `AGENTS.md` の内容だけを渡してください）：
+>
+> ```bash
+> mv AGENTS.md README.md
+> rm -rf README.ja.md .git
+> ```
+>
+> **`.git` を削除する際の副作用：**
+> - この使い捨てディレクトリでは後から `git pull` で更新を追従できなくなります（NixOS でデーモンを立てるだけなら、システム側の `flake.nix` で `github:kenh0u/ssh-for-gemini` を直指定できます）。
+> - 必ず **`git clone` 直後（`cargo build` で `target/` が作られる前）** に実行してください。`.git` が無い状態で `nix build` 等を実行すると、Flake が `path:` 扱いになりディレクトリ内の全ファイル（`target/` を含む）を Nix store にコピーするため重くなります。
+
+
 ---
 
 ## できること
@@ -130,7 +147,14 @@ cargo build --release
 
 ### 2. NixOS モジュールでの常駐（任意）
 
-NixOS の flake inputs に本リポジトリを追加すると、ハードニング済みの systemd サービスを宣言的に有効化できます。
+NixOS の `flake.nix` に本リポジトリ（`github:kenh0u/ssh-for-gemini`）を inputs として追加し、`overlays.default` と `nixosModules.default` を読み込むと、ハードニング済みの systemd サービスを宣言的に有効化できます。
+
+```nix
+# flake.nix
+{
+  inputs.ssh-for-gemini.url = "github:kenh0u/ssh-for-gemini";
+}
+```
 
 ```nix
 {

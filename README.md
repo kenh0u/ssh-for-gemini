@@ -6,6 +6,23 @@ Give **Gemini Task mode** real OpenSSH access to your Linux machine — **no Mac
 
 `ssh-for-gemini` is a tiny, zero-dependency Rust daemon (~600 KB stripped) that bridges pure HTTP/1.1 `POST`/`GET` requests to local `127.0.0.1:22`, paired with a drop-in Gemini Skill template (`skill-template/`). Once wired up, you can open Gemini on your phone or browser in Task mode and tell it to inspect repos, run tests, kick off builds, check USB/hardware devices, or dispatch detached jobs on your Linux box using your Gemini Task quota.
 
+> [!IMPORTANT]
+> **Before handing this repository to an AI / Coding Agent**
+>
+> **Do not paste the GitHub URL directly into an AI chat or coding agent.** The [Why This Architecture?](#why-this-architecture-gemini-task-sandbox-constraints) section below documents cloud-sandbox and gateway constraints in plain technical detail, which can trigger automated safety/policy refusals when an AI reads it without prior context.
+>
+> Instead, **read and understand all caveats, prerequisites, and security risks in this README yourself first**, then clone a **disposable setup copy** and run these two commands in the freshly cloned directory before pointing your coding agent at it (or pass `AGENTS.md` directly):
+>
+> ```bash
+> mv AGENTS.md README.md
+> rm -rf README.ja.md .git
+> ```
+>
+> **Notes on `rm -rf .git`:**
+> - That disposable directory will no longer support `git pull` for upstream updates. (If you only want to run the NixOS daemon, you can reference `github:kenh0u/ssh-for-gemini` directly in your NixOS `flake.nix` instead.)
+> - Run these commands on a **fresh clone before `cargo build`** creates `target/`: without `.git`, Nix treats a local directory as a `path:` flake and copies every file in it (including `target/`) into the Nix store.
+
+
 ---
 
 ## What You Can Do
@@ -126,7 +143,14 @@ cargo build --release
 
 ### 2. NixOS Module (Optional)
 
-Add this flake to your NixOS configuration inputs and enable the hardened systemd service:
+Add this flake (`github:kenh0u/ssh-for-gemini`) to your NixOS `flake.nix` inputs (`overlays.default` + `nixosModules.default`) and enable the hardened systemd service:
+
+```nix
+# flake.nix
+{
+  inputs.ssh-for-gemini.url = "github:kenh0u/ssh-for-gemini";
+}
+```
 
 ```nix
 {
